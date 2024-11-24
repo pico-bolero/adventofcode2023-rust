@@ -20,7 +20,7 @@ fn select_scenario() -> ScenarioConfig {
     match args[1].as_str() {
         "day01" => ScenarioConfig {
             file_path: "./data/day01.txt".to_string(),
-            process_fn: day01::process,
+            process_fn: day01::combine_first_and_last_digit,
         },
         _ => {
             panic!("Expected argument like 'day01' and not {}", &args[1]);
@@ -44,5 +44,5 @@ fn main() {
         .map(|x| x.unwrap())
         .map(|x| (scenario.process_fn)(x.as_str()))
         .sum();
-    print!("Sum {}", total);
+    print!("Sum {}\n", total);
 }
