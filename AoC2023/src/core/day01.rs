@@ -2,8 +2,9 @@ extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
 pub fn combine_first_and_last_digit(input: &str) -> i32 {
-    let first_digit_char = get_first_digit_char(input.to_string());
-    let last_digit_char = get_first_digit_char(input.graphemes(true).rev().collect());
+    let first_digit_char = get_first_digit_char(input);
+    let last_digit_char =
+        get_first_digit_char(input.graphemes(true).rev().collect::<String>().as_str());
     let number_str = format!("{}{}", first_digit_char, last_digit_char);
     match number_str.parse::<i32>() {
         Ok(x) => x,
@@ -11,7 +12,8 @@ pub fn combine_first_and_last_digit(input: &str) -> i32 {
     }
 }
 
-pub fn get_first_digit_char(input: String) -> char {
+/// Returns the first ascii digit as a char from the string
+pub fn get_first_digit_char(input: &str) -> char {
     let digit_opt = input.chars().find(|x| char::is_ascii_digit(x));
     match digit_opt {
         Some(x) => x,
@@ -61,9 +63,9 @@ mod tests {
 
     #[test]
     fn test_get_digit_char() {
-        assert_eq!('1', get_first_digit_char("1abc2".to_string()));
-        assert_eq!('3', get_first_digit_char("pqr3stu8vwx".to_string()));
-        assert_eq!('\0', get_first_digit_char("pqrstuvwx".to_string()));
+        assert_eq!('1', get_first_digit_char("1abc2"));
+        assert_eq!('3', get_first_digit_char("pqr3stu8vwx"));
+        assert_eq!('\0', get_first_digit_char("pqrstuvwx"));
     }
 
     #[test]
