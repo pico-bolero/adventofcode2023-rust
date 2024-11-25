@@ -18,9 +18,13 @@ fn select_scenario() -> ScenarioConfig {
         panic!("Expected 1 argument like 'day01'");
     }
     match args[1].as_str() {
-        "day01" => ScenarioConfig {
+        "day01_part1" => ScenarioConfig {
             file_path: "./data/day01.txt".to_string(),
-            process_fn: day01::combine_first_and_last_digit,
+            process_fn: day01::day01_part1,
+        },
+        "day01_part2" => ScenarioConfig {
+            file_path: "./data/day01.txt".to_string(),
+            process_fn: day01::day01_part2,
         },
         _ => {
             panic!("Expected argument like 'day01' and not {}", &args[1]);
