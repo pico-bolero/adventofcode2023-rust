@@ -1,13 +1,14 @@
 pub mod core;
 pub mod io;
 use crate::core::day01;
+use crate::core::day02;
 use crate::io::data_loader;
 use std::env;
 use std::path::Path;
 
 struct ScenarioConfig {
     file_path: String,
-    process_fn: fn(&str) -> i32,
+    process_fn: fn(&mut dyn Iterator<Item = String>) -> (),
 }
 
 // Examines the command line arguments and passes back
@@ -15,7 +16,7 @@ struct ScenarioConfig {
 fn select_scenario() -> ScenarioConfig {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
-        panic!("Expected 1 argument like 'day01'");
+        panic!("Expected 1 argument like 'day01_part1'");
     }
     match args[1].as_str() {
         "day01_part1" => ScenarioConfig {
@@ -26,8 +27,12 @@ fn select_scenario() -> ScenarioConfig {
             file_path: "./data/day01.txt".to_string(),
             process_fn: day01::day01_part2,
         },
+        "day02_part1" => ScenarioConfig {
+            file_path: "./data/day02.txt".to_string(),
+            process_fn: day02::day02_part1,
+        },
         _ => {
-            panic!("Expected argument like 'day01' and not {}", &args[1]);
+            panic!("Expected argument like 'day01_part1' and not {}", &args[1]);
         }
     }
 }
@@ -42,11 +47,6 @@ fn main() {
         scenario.file_path
     ));
 
-    // Do something with each of the lines
-    let total: i32 = lines
-        .filter(|x| x.is_ok())
-        .map(|x| x.unwrap())
-        .map(|x| (scenario.process_fn)(x.as_str()))
-        .sum();
-    print!("Sum {}\n", total);
+    let mut itr = lines.filter(|x| x.is_ok()).map(|x| x.unwrap());
+    (scenario.process_fn)(&mut itr);
 }

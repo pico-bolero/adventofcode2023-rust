@@ -1,15 +1,27 @@
 extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
+/// Receives input and prints output
+pub fn day01_part1(lines: &mut dyn Iterator<Item = String>) -> () {
+    let total: i32 = lines.map(|x| day01_part1_line_handler(x.as_str())).sum();
+    print!("Sum {}\n", total);
+}
+
+/// Receives input and prints output
+pub fn day01_part2(lines: &mut dyn Iterator<Item = String>) -> () {
+    let total: i32 = lines.map(|x| day01_part2_line_handler(x.as_str())).sum();
+    print!("Sum {}\n", total);
+}
+
 /// Processes a string according to the rules for Day 1 Part 1
-pub fn day01_part1(input: &str) -> i32 {
+fn day01_part1_line_handler(input: &str) -> i32 {
     let first_digit_char = get_first_digit_char(input);
     let last_digit_char = get_first_digit_char(reverse_graphemes(input).as_str());
     format_char_digits_to_int(first_digit_char, last_digit_char)
 }
 
 /// Processes a string according to the rules for Day 1 Part 2
-pub fn day01_part2(input: &str) -> i32 {
+fn day01_part2_line_handler(input: &str) -> i32 {
     let indices_and_digits = get_index_and_digit(input);
     let first_digit_char = word_to_digit_char(indices_and_digits.1);
     let last_digit_char = word_to_digit_char(indices_and_digits.3);
@@ -17,13 +29,13 @@ pub fn day01_part2(input: &str) -> i32 {
 }
 
 /// Reverse the graphemes of the input and returns a new String
-pub fn reverse_graphemes(input: &str) -> String {
+fn reverse_graphemes(input: &str) -> String {
     let reversed = input.graphemes(true).rev().collect::<String>();
     reversed.to_string()
 }
 
-/// Smooshes to chars together and parses it as an int
-pub fn format_char_digits_to_int(a: char, b: char) -> i32 {
+/// Appends two chars together and parses it as an int
+fn format_char_digits_to_int(a: char, b: char) -> i32 {
     let number_str = format!("{}{}", a, b);
     match number_str.parse::<i32>() {
         Ok(x) => x,
@@ -31,8 +43,8 @@ pub fn format_char_digits_to_int(a: char, b: char) -> i32 {
     }
 }
 
-/// Returns the first ascii digit as a char from the string
-pub fn get_first_digit_char(input: &str) -> char {
+/// Returns the first ASCII digit as a char from the string
+fn get_first_digit_char(input: &str) -> char {
     let digit_opt = input.chars().find(|x| char::is_ascii_digit(x));
     match digit_opt {
         Some(x) => x,
@@ -41,7 +53,7 @@ pub fn get_first_digit_char(input: &str) -> char {
 }
 
 /// When a string represents a word or a number return it as a digit
-pub fn word_to_digit_char(input: &str) -> char {
+fn word_to_digit_char(input: &str) -> char {
     match input.to_lowercase().as_str() {
         "0" | "zero" => '0',
         "1" | "one" => '1',
@@ -57,13 +69,14 @@ pub fn word_to_digit_char(input: &str) -> char {
     }
 }
 
-pub fn get_index_and_digit(input: &str) -> (usize, &str, usize, &str) {
-    let digits = vec![
-        "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "zero", "one", "two", "three", "four",
-        "five", "six", "seven", "eight", "nine",
-    ];
-    // locates the indicies of every digit and word
-    let indices: Vec<(usize, &str)> = digits
+const DIGITS: [&str; 20] = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "zero", "one", "two", "three", "four",
+    "five", "six", "seven", "eight", "nine",
+];
+
+fn get_index_and_digit(input: &str) -> (usize, &str, usize, &str) {
+    // locates the indices of every digit and word
+    let indices: Vec<(usize, &str)> = DIGITS
         .iter()
         .flat_map(|x| input.match_indices(*x).collect::<Vec<(usize, &str)>>())
         .collect();
@@ -86,22 +99,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_day01_part1() {
-        assert_eq!(12, day01_part1("1abc2"));
-        assert_eq!(38, day01_part1("pqr3stu8vwx"));
-        assert_eq!(15, day01_part1("a1b2c3d4e5f"));
-        assert_eq!(77, day01_part1("treb7uchet"));
+    fn test_day01_part1_line_handler() {
+        assert_eq!(12, day01_part1_line_handler("1abc2"));
+        assert_eq!(38, day01_part1_line_handler("pqr3stu8vwx"));
+        assert_eq!(15, day01_part1_line_handler("a1b2c3d4e5f"));
+        assert_eq!(77, day01_part1_line_handler("treb7uchet"));
     }
 
     #[test]
     fn test_day01_part2() {
-        assert_eq!(29, day01_part2("two1nine"));
-        assert_eq!(83, day01_part2("eightwothree"));
-        assert_eq!(13, day01_part2("abcone2threexyz"));
-        assert_eq!(24, day01_part2("xtwone3four"));
-        assert_eq!(42, day01_part2("4nineeightseven2"));
-        assert_eq!(14, day01_part2("zoneight234"));
-        assert_eq!(76, day01_part2("7pqrstsixteen"));
+        assert_eq!(29, day01_part2_line_handler("two1nine"));
+        assert_eq!(83, day01_part2_line_handler("eightwothree"));
+        assert_eq!(13, day01_part2_line_handler("abcone2threexyz"));
+        assert_eq!(24, day01_part2_line_handler("xtwone3four"));
+        assert_eq!(42, day01_part2_line_handler("4nineeightseven2"));
+        assert_eq!(14, day01_part2_line_handler("zoneight234"));
+        assert_eq!(76, day01_part2_line_handler("7pqrstsixteen"));
     }
 
     #[test]
