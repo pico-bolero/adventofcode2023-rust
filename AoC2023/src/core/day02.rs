@@ -11,7 +11,7 @@ pub fn day02_part2(lines: &mut dyn Iterator<Item = String>) -> () {
 }
 
 #[derive(Eq, PartialEq, Debug)]
-struct PullResult {
+struct CubeCounts {
     red: u32,
     green: u32,
     blue: u32,
@@ -19,7 +19,7 @@ struct PullResult {
 
 /// Inspects the data and of the game and if it is possible given the constraint the sum the game number
 fn day02_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
-    let constraint = PullResult {
+    let constraint = CubeCounts {
         red: 12,
         green: 13,
         blue: 14,
@@ -32,7 +32,7 @@ fn day02_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
 
 /// Parse the input into a PullResult and compare against the constraint
 /// Return 0 if the game cannot meet the constraint
-fn day02_part1_line_handler(input: &str, constraint: &PullResult) -> u32 {
+fn day02_part1_line_handler(input: &str, constraint: &CubeCounts) -> u32 {
     let (game_id, pulls) = parse_game(input);
     if pulls.iter().all(|x| {
         x.red <= constraint.red && x.blue <= constraint.blue && x.green <= constraint.green
@@ -53,9 +53,9 @@ fn day02_part2_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
 
 /// Iterates over the input vector to establish the minimum number of cubes for each color
 /// in the bag. Then multiplies those values together to determine the power.
-fn calculate_power(pulls: Vec<PullResult>) -> u32 {
+fn calculate_power(pulls: Vec<CubeCounts>) -> u32 {
     let min_possible_cubes_in_bag = pulls.iter().fold(
-        PullResult {
+        CubeCounts {
             red: 0,
             green: 0,
             blue: 0,
@@ -79,7 +79,7 @@ fn calculate_power(pulls: Vec<PullResult>) -> u32 {
 }
 
 /// Parses the input into a tuple of the game_id and a vector of pulls
-fn parse_game(input: &str) -> (u32, Vec<PullResult>) {
+fn parse_game(input: &str) -> (u32, Vec<CubeCounts>) {
     // Extract the game id.
     let mut splits = input.split(":");
     let game_str = splits.next().expect("First segments should be Game #");
@@ -102,15 +102,15 @@ fn parse_game_segment(game_str: &str) -> u32 {
 }
 
 /// Excepts a str in the format of a repeating '# (red|blue|green),' values separated by a semicolon
-fn parse_pulls_segment(game_str: &str) -> Vec<PullResult> {
+fn parse_pulls_segment(game_str: &str) -> Vec<CubeCounts> {
     let pulls = game_str.split(";");
     let pull_results = pulls.map(|pull| parse_to_pull_result(pull)).collect();
     pull_results
 }
 
 /// Except a string of '# (red|blue|green)' separated by a comma and return a PullResult
-fn parse_to_pull_result(pull: &str) -> PullResult {
-    let mut result = PullResult {
+fn parse_to_pull_result(pull: &str) -> CubeCounts {
+    let mut result = CubeCounts {
         red: 0,
         green: 0,
         blue: 0,
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn test_parse_to_pull_result() {
         assert_eq!(
-            PullResult {
+            CubeCounts {
                 red: 1,
                 green: 0,
                 blue: 0
@@ -195,7 +195,7 @@ mod tests {
             parse_to_pull_result(" 1 red ")
         );
         assert_eq!(
-            PullResult {
+            CubeCounts {
                 red: 0,
                 green: 1,
                 blue: 0
@@ -203,7 +203,7 @@ mod tests {
             parse_to_pull_result(" 1 green ")
         );
         assert_eq!(
-            PullResult {
+            CubeCounts {
                 red: 0,
                 green: 0,
                 blue: 1
@@ -211,7 +211,7 @@ mod tests {
             parse_to_pull_result(" 1 blue ")
         );
         assert_eq!(
-            PullResult {
+            CubeCounts {
                 red: 13,
                 green: 42,
                 blue: 69
