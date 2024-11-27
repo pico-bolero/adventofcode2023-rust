@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 /// Pretty print the result of the calculations
-pub fn day03_part1(lines: &mut dyn Iterator<Item = String>) -> () {
+pub fn day03_part1(lines: &mut dyn Iterator<Item = String>) {
     let total = day03_part1_handler(lines);
     println!("Total: {}", total);
 }
@@ -153,7 +153,7 @@ fn extract_part_number_locations(input: &str) -> Vec<PartNumberLocation> {
             let replacement = " ".repeat(x.len());
             only_the_digits = only_the_digits.replacen(x, replacement.as_str(), 1);
             PartNumberLocation {
-                value: value,
+                value,
                 index: Range {
                     start: idx,
                     end: idx + x.len(),

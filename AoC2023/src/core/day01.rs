@@ -2,15 +2,15 @@ extern crate unicode_segmentation;
 use unicode_segmentation::UnicodeSegmentation;
 
 /// Receives input and prints output
-pub fn day01_part1(lines: &mut dyn Iterator<Item = String>) -> () {
+pub fn day01_part1(lines: &mut dyn Iterator<Item = String>) {
     let total: i32 = lines.map(|x| day01_part1_line_handler(x.as_str())).sum();
-    print!("Sum {}\n", total);
+    println!("Sum {}", total);
 }
 
 /// Receives input and prints output
-pub fn day01_part2(lines: &mut dyn Iterator<Item = String>) -> () {
+pub fn day01_part2(lines: &mut dyn Iterator<Item = String>) {
     let total: i32 = lines.map(|x| day01_part2_line_handler(x.as_str())).sum();
-    print!("Sum {}\n", total);
+    println!("Sum {}", total);
 }
 
 /// Processes a string according to the rules for Day 1 Part 1
@@ -37,19 +37,13 @@ fn reverse_graphemes(input: &str) -> String {
 /// Appends two chars together and parses it as an int
 fn format_char_digits_to_int(a: char, b: char) -> i32 {
     let number_str = format!("{}{}", a, b);
-    match number_str.parse::<i32>() {
-        Ok(x) => x,
-        Err(_) => 0,
-    }
+    number_str.parse::<i32>().unwrap_or_default()
 }
 
 /// Returns the first ASCII digit as a char from the string
 fn get_first_digit_char(input: &str) -> char {
-    let digit_opt = input.chars().find(|x| char::is_ascii_digit(x));
-    match digit_opt {
-        Some(x) => x,
-        None => '\0',
-    }
+    let digit_opt = input.chars().find(char::is_ascii_digit);
+    digit_opt.unwrap_or('\0')
 }
 
 /// When a string represents a word or a number return it as a digit

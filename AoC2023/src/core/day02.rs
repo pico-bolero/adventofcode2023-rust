@@ -1,13 +1,13 @@
 /// Receives input and prints output
-pub fn day02_part1(lines: &mut dyn Iterator<Item = String>) -> () {
+pub fn day02_part1(lines: &mut dyn Iterator<Item = String>) {
     let total = day02_part1_handler(lines);
-    print!("Sum {}\n", total);
+    println!("Sum {}", total);
 }
 
 /// Receives input and prints output
-pub fn day02_part2(lines: &mut dyn Iterator<Item = String>) -> () {
+pub fn day02_part2(lines: &mut dyn Iterator<Item = String>) {
     let total = day02_part2_handler(lines);
-    print!("Power total {}\n", total);
+    println!("Power total {}", total);
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -27,7 +27,7 @@ fn day02_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     let total: u32 = lines
         .map(|x| day02_part1_line_handler(x.as_str(), &constraint))
         .sum();
-    return total;
+    total
 }
 
 /// Parse the input into a PullResult and compare against the constraint
@@ -97,15 +97,13 @@ fn parse_game_segment(game_str: &str) -> u32 {
     let mut splits = game_str.split(" ");
     splits.next().expect("Don't need the game segment");
     let game_id = splits.next().expect("This should be the int portion");
-    let game_id = game_id.parse::<u32>().expect("Should parse into int");
-    game_id
+    game_id.parse::<u32>().expect("Should parse into int")
 }
 
 /// Excepts a str in the format of a repeating '# (red|blue|green),' values separated by a semicolon
 fn parse_pulls_segment(game_str: &str) -> Vec<CubeCounts> {
     let pulls = game_str.split(";");
-    let pull_results = pulls.map(|pull| parse_to_pull_result(pull)).collect();
-    pull_results
+    pulls.map(parse_to_pull_result).collect()
 }
 
 /// Except a string of '# (red|blue|green)' separated by a comma and return a PullResult
