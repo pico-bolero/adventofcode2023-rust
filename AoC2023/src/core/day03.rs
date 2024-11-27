@@ -1,11 +1,12 @@
 use std::ops::Range;
 
+/// Pretty print the result of the calculations
 pub fn day03_part1(lines: &mut dyn Iterator<Item = String>) -> () {
     let total = day03_part1_handler(lines);
-    print!("Total: {}\n", total);
+    println!("Total: {}", total);
 }
 
-pub fn day03_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
+fn day03_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     let mut scan_area = ScanArea {
         prev: None,
         current: None,
@@ -21,7 +22,7 @@ pub fn day03_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
         if scan_area.current.is_none() {
             break;
         }
-        total = total + scan_area_handler(scan_area.clone());
+        total += scan_area_handler(scan_area.clone());
     }
     total
 }
@@ -49,7 +50,7 @@ fn scan_area_handler(scan_area: ScanArea) -> u32 {
                 .iter()
                 .chain(curr_gears.iter())
                 .chain(next_gears.iter());
-            part_intersects_gears(*x, &mut gear_chain)
+            part_intersects_gears(x, &mut gear_chain)
         })
         .collect();
     let result: u32 = part_numbers.iter().map(|x| x.value).sum();
@@ -70,6 +71,7 @@ fn part_intersects_gears(
         end: part_number_location.index.end + 1,
     };
     // Lesson learned: gears is a gear chain, so you cannot call `any` on it? Correct.
+    #[allow(clippy::unnecessary_fold)]
     let result: bool = gears.fold(false, |prev, gear| {
         prev || extended_range.contains(&gear.index)
     });
@@ -104,7 +106,7 @@ struct PartNumberLocation {
 
 #[derive(Debug)]
 struct GearLocation {
-    symbol: char,
+    _symbol: char,
     index: usize,
 }
 
@@ -114,7 +116,7 @@ fn extract_gears(input: &str) -> Vec<GearLocation> {
         .enumerate()
         .filter(|(_idx, x)| !(x.is_ascii_alphanumeric() || *x == '.'))
         .map(|(idx, x)| GearLocation {
-            symbol: x,
+            _symbol: x,
             index: idx,
         })
         .collect();
@@ -141,13 +143,12 @@ fn extract_part_number_locations(input: &str) -> Vec<PartNumberLocation> {
     let part_numbers: Vec<PartNumberLocation> = number_strings
         .iter()
         .map(|x| {
-            let idx = only_the_digits.find(x).expect(
-                format!(
+            let idx = only_the_digits.find(x).unwrap_or_else(|| {
+                panic!(
                     "This was already found! Looking for {}; {}!",
                     x, only_the_digits
                 )
-                .as_str(),
-            );
+            });
             let value: u32 = x.parse().expect("Should parse into a u32");
             let replacement = " ".repeat(x.len());
             only_the_digits = only_the_digits.replacen(x, replacement.as_str(), 1);
@@ -248,33 +249,35 @@ mod tests {
 
     #[test]
     fn test_scan_area_handler() {
-        let scan_area = ScanArea {
+        let mut scan_area = ScanArea {
             prev: None,
             current: Some("..123..".to_string()),
             next: Some(".....*.".to_string()),
         };
         assert_eq!(123, scan_area_handler(scan_area));
 
-        let scan_area = ScanArea {
+        scan_area = ScanArea {
             prev: Some(".*.....".to_string()),
             current: Some("..123..".to_string()),
             next: None,
         };
         assert_eq!(123, scan_area_handler(scan_area));
 
-        let scan_area = ScanArea {
+        scan_area = ScanArea {
             prev: None,
             current: Some("..123..".to_string()),
             next: Some(".......".to_string()),
         };
         assert_eq!(0, scan_area_handler(scan_area));
 
-        let scan_area = ScanArea {
-            prev: Some(".......".to_string()),
-            current: Some("..123..".to_string()),
-            next: None,
-        };
-        assert_eq!(0, scan_area_handler(scan_area));
+        {
+            scan_area = ScanArea {
+                prev: Some(".......".to_string()),
+                current: Some("..123..".to_string()),
+                next: None,
+            };
+            assert_eq!(0, scan_area_handler(scan_area));
+        }
 
         let scan_area = ScanArea {
             prev: Some("..999.*..................".to_string()),
@@ -292,7 +295,7 @@ mod tests {
         };
         let gear = GearLocation {
             index: 0,
-            symbol: '*',
+            _symbol: '*',
         };
         // should intersect
         let gears = vec![gear];
@@ -307,7 +310,7 @@ mod tests {
         };
         let gear = GearLocation {
             index: 3,
-            symbol: '+',
+            _symbol: '+',
         };
         // should intersect
         let gears = vec![gear];
@@ -324,15 +327,15 @@ mod tests {
         let gears = vec![
             GearLocation {
                 index: 3,
-                symbol: '+',
+                _symbol: '+',
             },
             GearLocation {
                 index: 8,
-                symbol: '*',
+                _symbol: '*',
             },
             GearLocation {
                 index: 11,
-                symbol: '#',
+                _symbol: '#',
             },
         ];
         assert!(part_intersects_gears(&part_number, &mut gears.iter()));

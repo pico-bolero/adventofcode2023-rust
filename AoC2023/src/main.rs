@@ -52,11 +52,12 @@ fn main() {
     let scenario = select_scenario();
 
     // Get the lines iterator
-    let lines = data_loader::read_lines(Path::new(scenario.file_path.as_str())).expect(&format!(
-        "Expected {} to have readable lines.",
-        scenario.file_path
-    ));
+    //let lines = data_loader::read_lines(Path::new(scenario.file_path.as_str())).expect(&format!(
+    //    "Expected {} to have readable lines.",
+    let lines = data_loader::read_lines(Path::new(scenario.file_path.as_str()))
+        .unwrap_or_else(|_| panic!("Expected {} to have readable lines.", scenario.file_path));
 
-    let mut itr = lines.filter(|x| x.is_ok()).map(|x| x.unwrap());
+    // Only process the 'Ok()' items
+    let mut itr = lines.map_while(Result::ok);
     (scenario.process_fn)(&mut itr);
 }
