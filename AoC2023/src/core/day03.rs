@@ -27,6 +27,32 @@ fn day03_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     total
 }
 
+pub fn day03_part2(lines: &mut dyn Iterator<Item = String>) {
+    let total = day03_part2_handler(lines);
+    println!("Total: {}", total);
+}
+
+fn day03_part2_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
+    let mut scan_area = ScanArea {
+        prev: None,
+        current: None,
+        next: lines.next(),
+    };
+
+    let mut total = 0u32;
+    loop {
+        let line = lines.next();
+        scan_area = scan_area.shift_new(line);
+
+        // Processed the last item
+        if scan_area.current.is_none() {
+            break;
+        }
+        total += scan_area_handler2(scan_area.clone());
+    }
+    total
+}
+
 fn scan_area_handler(scan_area: ScanArea) -> u32 {
     let current_line = scan_area.current.expect("There should always be a current");
     let part_number_locations = extract_part_number_locations(&current_line);
@@ -57,25 +83,70 @@ fn scan_area_handler(scan_area: ScanArea) -> u32 {
     result
 }
 
+fn scan_area_handler2(scan_area: ScanArea) -> u32 {
+    let current_line = scan_area.current.expect("There should always be a current");
+
+    let gears = extract_gears(&current_line);
+    let prev_parts = if scan_area.prev.is_some() {
+        extract_part_number_locations(scan_area.prev.unwrap().as_str())
+    } else {
+        Vec::new()
+    };
+    let curr_parts = extract_part_number_locations(&current_line);
+    let next_parts = if scan_area.next.is_some() {
+        extract_part_number_locations(scan_area.next.unwrap().as_str())
+    } else {
+        Vec::new()
+    };
+
+    let gear_ratios: Vec<u32> = gears
+        .iter()
+        .map(|gear| {
+            let mut part_chain = prev_parts
+                .iter()
+                .chain(curr_parts.iter())
+                .chain(next_parts.iter());
+            gear_ratio(gear, &mut part_chain)
+        })
+        .collect();
+
+    let result: u32 = gear_ratios.iter().map(|x| x).sum();
+    result
+}
+
 /// Accepts a part location and gears, returns true if the part intersects any gears
 fn part_intersects_gears(
     part_number_location: &PartNumberLocation,
     gears: &mut dyn Iterator<Item = &GearLocation>,
 ) -> bool {
-    let extended_range = Range {
-        start: if part_number_location.index.start == 0 {
-            0
-        } else {
-            part_number_location.index.start - 1
-        }, // usize is going to hurt here
-        end: part_number_location.index.end + 1,
-    };
     // Lesson learned: gears is a gear chain, so you cannot call `any` on it? Correct.
     #[allow(clippy::unnecessary_fold)]
     let result: bool = gears.fold(false, |prev, gear| {
-        prev || extended_range.contains(&gear.index)
+        prev || part_number_location.extended_range().contains(&gear.index)
     });
     result
+}
+
+/// Accepts a gear, returns the parts that it is adjacent to.
+fn gear_ratio(
+    gear: &GearLocation,
+    part_numbers: &mut dyn Iterator<Item = &PartNumberLocation>,
+) -> u32 {
+    // Ignore non-gear symbols
+    if gear._symbol != '*' {
+        return 0;
+    }
+
+    // Lesson learned: part_numbers is a iter chain, so you cannot call `any` on it? Correct.
+    #[allow(clippy::unnecessary_fold)]
+    let parts_touching_gears: Vec<&PartNumberLocation> = part_numbers
+        .filter(|part| part.extended_range().contains(&gear.index))
+        .collect();
+
+    if parts_touching_gears.len() <= 1 {
+        return 0;
+    }
+    parts_touching_gears.iter().fold(1, |x, y| x * y.value)
 }
 
 // ScanArea
@@ -102,6 +173,21 @@ impl ScanArea {
 struct PartNumberLocation {
     index: Range<usize>,
     value: u32,
+}
+
+impl PartNumberLocation {
+    /// Helper to get the PartNumberLocations' range expanded by one on each size
+    ///   for comparison
+    fn extended_range(&self) -> Range<usize> {
+        Range {
+            start: if self.index.start == 0 {
+                0
+            } else {
+                self.index.start - 1
+            },
+            end: self.index.end + 1,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -170,20 +256,39 @@ mod tests {
 
     #[test]
     fn test_day03_part1() {
-        let lines = vec![
-            "467..114..",
-            "...*......",
-            "..35..633.",
-            "......#...",
-            "617*......",
-            ".....+.58.",
-            "..592.....",
-            "......755.",
-            "...$.*....",
-            ".664.598..",
-        ];
+        let lines: Vec<&str> = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598.."
+            .split('\n')
+            .collect();
+
         let result = day03_part1_handler(&mut lines.iter().map(|x| x.to_string()));
         assert_eq!(4361, result);
+    }
+
+    #[test]
+    fn test_day03_part2() {
+        let lines: Vec<&str> = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598.."
+            .split('\n')
+            .collect();
+        let result = day03_part2_handler(&mut lines.iter().map(|x| x.to_string()));
+        assert_eq!(467835, result);
     }
 
     #[test]
@@ -285,6 +390,21 @@ mod tests {
             next: Some("..999...................+".to_string()),
         };
         assert_eq!(222 + 333 + 444 + 555, scan_area_handler(scan_area));
+    }
+
+    #[test]
+    fn test_part_number_location_extend_range() {
+        let part = PartNumberLocation {
+            index: Range { start: 0, end: 2 },
+            value: 13,
+        };
+        assert_eq!(Range { start: 0, end: 3 }, part.extended_range());
+
+        let part = PartNumberLocation {
+            index: Range { start: 10, end: 15 },
+            value: 1234,
+        };
+        assert_eq!(Range { start: 9, end: 16 }, part.extended_range());
     }
 
     #[test]
