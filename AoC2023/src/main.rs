@@ -3,6 +3,7 @@ pub mod io;
 use crate::core::day01;
 use crate::core::day02;
 use crate::core::day03;
+use crate::core::day04;
 use crate::io::data_loader;
 use std::env;
 use std::path::Path;
@@ -43,6 +44,10 @@ fn select_scenario() -> ScenarioConfig {
         "day03_part2" => ScenarioConfig {
             file_path: "./data/day03.txt".to_string(),
             process_fn: day03::day03_part2,
+        },
+        "day04_part1" => ScenarioConfig {
+            file_path: "./data/day04.txt".to_string(),
+            process_fn: day04::day04_part1,
         },
 
         _ => {
