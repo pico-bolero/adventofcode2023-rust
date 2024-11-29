@@ -1,4 +1,4 @@
-use std::{cmp::max, collections::HashSet};
+use std::collections::HashSet;
 
 use super::parsers::parse_str_with_separator;
 
