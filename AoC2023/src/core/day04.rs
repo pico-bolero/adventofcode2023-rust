@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, fmt, str::FromStr, string::ParseError};
 
 use super::parsers::parse_str_with_separator;
 
@@ -15,6 +15,8 @@ fn day04_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     let base: u32 = 2;
     let score = lines
         .map(|x| Card::from_str(x.as_str()))
+        .filter(|x| x.is_ok())
+        .map(|x| x.unwrap())
         .map(|x: Card| x.matches())
         .map(|x| {
             if x.len() == 0 {
@@ -44,26 +46,49 @@ impl Card {
             .collect();
         intersection
     }
+}
+#[derive(Debug, PartialEq, Eq, Clone)]
+struct ParseCardError {
+    message: String,
+}
 
-    fn from_str(input: &str) -> Card {
+impl fmt::Display for ParseCardError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl FromStr for Card {
+    type Err = ParseCardError;
+
+    fn from_str(input: &str) -> Result<Card, Self::Err> {
         // Segment the line
         let mut splits = input.split(":");
-        let card_segment = splits.next().expect("First segments should be Card #");
-        let numbers_segment = splits
-            .next()
-            .expect("Second segment should be the remainder");
+
+        let card_segment = splits.next().ok_or(ParseCardError {
+            message: "Failed to split input into first segment for card".to_string(),
+        })?;
+        let numbers_segment = splits.next().ok_or(ParseCardError {
+            message: "Failed to split input into second segment for card".to_string(),
+        })?;
 
         // Extract the card id
         let card_id = card_segment
             .replace("Card ", "")
             .trim()
             .parse::<u32>()
-            .expect("Should parse to a u32");
+            .map_err(|_| ParseCardError {
+                message: "Failed to extract card id #".to_string(),
+            })?;
 
         // Extract the winners and numbers
         let mut splits = numbers_segment.split("|");
-        let lhs = splits.next().expect("Left hand side: winners");
-        let rhs = splits.next().expect("Right hand side: numbers");
+        let lhs = splits.next().ok_or(ParseCardError {
+            message: "Failed to split winners from numbers segment".to_string(),
+        })?;
+        let rhs = splits.next().ok_or(ParseCardError {
+            message: "Failed to split numbers from numbers segment".to_string(),
+        })?;
 
         let winners = parse_str_with_separator(lhs, " ");
         let numbers = parse_str_with_separator(rhs, " ");
@@ -73,7 +98,7 @@ impl Card {
             winners,
             numbers,
         };
-        card
+        Ok(card)
     }
 }
 
@@ -109,13 +134,14 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
     }
 
     #[test]
-    fn test_card_from_str() {
+    fn test_card_from_str() -> Result<(), ParseCardError> {
         let calculated = Card::from_str("Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11");
         let expected = Card {
             id: 6,
             winners: vec![31, 18, 13, 56, 72],
             numbers: vec![74, 77, 10, 23, 35, 67, 36, 11],
         };
-        assert_eq!(expected, calculated);
+        assert_eq!(expected, calculated?);
+        Ok(())
     }
 }
