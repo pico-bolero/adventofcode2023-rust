@@ -110,7 +110,7 @@ fn scan_area_handler2(scan_area: ScanArea) -> u32 {
         })
         .collect();
 
-    let result: u32 = gear_ratios.iter().map(|x| x).sum();
+    let result: u32 = gear_ratios.iter().sum();
     result
 }
 

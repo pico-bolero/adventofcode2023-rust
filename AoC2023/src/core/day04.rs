@@ -1,4 +1,9 @@
-use std::{collections::HashSet, fmt, str::FromStr, string::ParseError};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    ops::Range,
+    str::FromStr,
+};
 
 use super::parsers::parse_str_with_separator;
 
@@ -9,21 +14,65 @@ pub fn day04_part1(lines: &mut dyn Iterator<Item = String>) {
 }
 
 /// 1. Parse the lines into Cards that have two lists of values
-/// 2. Create a set from each list. Find the Union of each set
+/// 2. Create a set from each list. Find the Intersection of each set
 /// 3. Return 2^<Number of Sets>
 fn day04_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     let base: u32 = 2;
     let score = lines
-        .map(|x| Card::from_str(x.as_str()))
-        .filter(|x| x.is_ok())
-        .map(|x| x.unwrap())
+        .flat_map(|x| Card::from_str(x.as_str()))
         .map(|x: Card| x.matches())
         .map(|x| {
-            if x.len() == 0 {
+            if x.is_empty() {
                 0
             } else {
                 base.pow((x.len() - 1).try_into().unwrap())
             }
+        })
+        .sum();
+    score
+}
+
+/// Pretty print the result of the calculations
+pub fn day04_part2(lines: &mut dyn Iterator<Item = String>) {
+    let total = day04_part2_handler(lines);
+    println!("Total: {}", total);
+}
+
+/// 1. Parse the lines into Cards that have two lists of values
+/// 2. Evaluate the card and see how many cards of the next type you 'win'
+///     2a. Create a set from each list. Find the Intersection of each set
+///     2b. Aggregate the number of copies of a card. Create an entry in the Hashmap if it doesn't exist, add 1
+/// 3. Emit number of copies of a card
+///     3b. Remove copies from the aggregation as the work is completed. There is a bow wave of future data to be processed.
+/// 4. Sum the total
+fn day04_part2_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
+    let mut card_copies: HashMap<u32, u32> = HashMap::new();
+    let score = lines
+        .flat_map(|x| Card::from_str(x.as_str()))
+        .map(|x: Card| {
+            let matches = x.matches();
+            let bonus_card_ids = Range {
+                start: x.id + 1,
+                end: x.id + 1 + u32::try_from(matches.len()).unwrap(),
+            };
+
+            // Add in the current card count
+            let copies_of_this_card = *card_copies.entry(x.id).or_insert(0) + 1;
+
+            // Repeat this section for the number of copies of this card
+            Range {
+                start: 0,
+                end: copies_of_this_card,
+            }
+            .for_each(|_| {
+                bonus_card_ids.clone().for_each(|key| {
+                    *card_copies.entry(key).or_insert(0) += 1;
+                })
+            });
+            // Remove the current and cleanup the map
+            card_copies.remove(&x.id);
+
+            copies_of_this_card
         })
         .sum();
     score
@@ -40,10 +89,7 @@ impl Card {
     fn matches(&self) -> Vec<u32> {
         let winners_set: HashSet<u32> = HashSet::from_iter(self.winners.iter().cloned());
         let numbers_set: HashSet<u32> = HashSet::from_iter(self.numbers.iter().cloned());
-        let intersection: Vec<u32> = winners_set
-            .intersection(&numbers_set)
-            .map(|x| x.clone())
-            .collect();
+        let intersection: Vec<u32> = winners_set.intersection(&numbers_set).copied().collect();
         intersection
     }
 }
@@ -119,6 +165,21 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
 
         let result = day04_part1_handler(&mut lines.iter().map(|x| x.to_string()));
         assert_eq!(13, result);
+    }
+
+    #[test]
+    fn test_day04_part2() {
+        let lines: Vec<&str> = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"
+            .split('\n')
+            .collect();
+
+        let result = day04_part2_handler(&mut lines.iter().map(|x| x.to_string()));
+        assert_eq!(30, result);
     }
 
     #[test]
