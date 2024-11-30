@@ -64,6 +64,7 @@ impl Something {
                 x if x.is_empty() => {}
                 _ => { /* parse range */ }
             });
+
             s
         }
     */
@@ -90,7 +91,7 @@ impl FromStr for RangeMapping {
         let mut splits = input.split(" ");
         let dst_range_start = splits
             .next()
-            .ok(ParseRangeMappingError {
+            .ok_or(ParseRangeMappingError {
                 message: "Failed to get the first chunk".to_string(),
             })
             .map(|x| {
