@@ -1,5 +1,5 @@
 use super::parsers::parse_str_with_separator;
-use std::{cell::Cell, ops::Range, str::FromStr};
+use std::{ops::Range, str::FromStr};
 
 /// Pretty print the result of the calculations
 pub fn day05_part1(lines: &mut dyn Iterator<Item = String>) {
@@ -9,65 +9,123 @@ pub fn day05_part1(lines: &mut dyn Iterator<Item = String>) {
 
 /// Procedure
 /// 1. Parse the inputs into structs for the mappings and a list for the seeds.
-/// 2. Build the path from seed to location
-/// 3. Iterate over the seeds to find the location
-/// 4. Select the smallest location
+/// 2. Iterate over the seeds to find the location
+///     2a. Build the path from seed to location
+/// 3. Select the smallest location
 fn day05_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
-    todo!()
+    let scenario = Scenario::from_str_itr(lines);
+    let min_location = scenario
+        .seeds
+        .iter()
+        .map(|seed| location_for_seed(*seed, &scenario))
+        .min();
+    min_location.expect("There should have been an answer")
 }
 
-struct Something {
+fn destination_for_source(source: u32, rngs: &[RangeMapping]) -> u32 {
+    let destination: Vec<u32> = rngs
+        .iter()
+        .flat_map(|rng| rng.find_destination(source))
+        .collect();
+    if destination.is_empty() {
+        source
+    } else {
+        destination[0]
+    }
+}
+
+fn location_for_seed(seed: u32, scenario: &Scenario) -> u32 {
+    let soil = destination_for_source(seed, &scenario.seed_to_soil_mappings);
+    let fertilizer = destination_for_source(soil, &scenario.soil_to_fertilizer_mappings);
+    let water = destination_for_source(fertilizer, &scenario.fertilizer_to_waters);
+    let light = destination_for_source(water, &scenario.water_to_lights);
+    let temperature = destination_for_source(light, &scenario.light_to_temperatures);
+    let humidity = destination_for_source(temperature, &scenario.temperature_to_humidities);
+    destination_for_source(humidity, &scenario.humidity_to_locations)
+}
+
+struct Scenario {
     seeds: Vec<u32>,
     seed_to_soil_mappings: Vec<RangeMapping>,
     soil_to_fertilizer_mappings: Vec<RangeMapping>,
     fertilizer_to_waters: Vec<RangeMapping>,
     water_to_lights: Vec<RangeMapping>,
     light_to_temperatures: Vec<RangeMapping>,
-    temperature_to_humiditys: Vec<RangeMapping>,
+    temperature_to_humidities: Vec<RangeMapping>,
     humidity_to_locations: Vec<RangeMapping>,
 }
 
-impl Something {
-    fn new() -> Something {
-        Something {
+impl Scenario {
+    fn new() -> Scenario {
+        Scenario {
             seeds: Vec::new(),
             seed_to_soil_mappings: Vec::new(),
             soil_to_fertilizer_mappings: Vec::new(),
             fertilizer_to_waters: Vec::new(),
             water_to_lights: Vec::new(),
             light_to_temperatures: Vec::new(),
-            temperature_to_humiditys: Vec::new(),
+            temperature_to_humidities: Vec::new(),
             humidity_to_locations: Vec::new(),
         }
     }
-    /*
-        fn from_str_itr(lines: &mut dyn Iterator<Item = String>) -> Something {
-            let mut s = Something::new();
-            let r: Cell<&Vec<RangeMapping>> = Cell::new(&s.seed_to_soil_mappings);
 
-            lines.for_each(|line| match line {
-                x if x.contains("seeds:") => {
-                    let mut splits = x.split(":");
-                    splits.next(); // throw away the first part.
-                    s.seeds
-                        .append(&mut parse_str_with_separator(splits.next().unwrap(), ","));
-                }
-                x if x.contains("seed-to-soil map:") => {
-                    r.replace(&mut s.seed_to_soil_mappings);
-                }
-                x if x.contains("soil-to-fertilizer map:") => {}
-                x if x.contains("fertilizer-to-water map:") => {}
-                x if x.contains("water-to-light map:") => {}
-                x if x.contains("light-to-temperature map:") => {}
-                x if x.contains("temperature-to-humitity map:") => {}
-                x if x.contains("humidity-to-location map:") => {}
-                x if x.is_empty() => {}
-                _ => { /* parse range */ }
-            });
+    fn from_str_itr(lines: &mut dyn Iterator<Item = String>) -> Scenario {
+        let mut s = Scenario::new();
 
-            s
-        }
-    */
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if x.contains("seeds:") {
+                let mut splits = x.split(":");
+                splits.next(); // throw away the first part.
+                s.seeds
+                    .append(&mut parse_str_with_separator(splits.next().unwrap(), " "));
+            }
+        });
+        lines.next(); // advance one.
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("seed-to-soil map:") {
+                s.seed_to_soil_mappings
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("soil-to-fertilizer map:") {
+                s.soil_to_fertilizer_mappings
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("fertilizer-to-water map:") {
+                s.fertilizer_to_waters
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("water-to-light map:") {
+                s.water_to_lights
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("light-to-temperature map:") {
+                s.light_to_temperatures
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("temperature-to-humidity map:") {
+                s.temperature_to_humidities
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+        lines.take_while(|x| !x.is_empty()).for_each(|x| {
+            if !x.contains("humidity-to-location map:") {
+                s.humidity_to_locations
+                    .push(RangeMapping::from_str(x.as_str()).unwrap());
+            }
+        });
+
+        s
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -85,48 +143,30 @@ struct ParseRangeMappingError {
 impl FromStr for RangeMapping {
     type Err = ParseRangeMappingError;
 
-    /// There has got to be a cleaner way of doing this.
     fn from_str(input: &str) -> Result<RangeMapping, Self::Err> {
         // Segment the line
         let mut splits = input.split(" ");
-        let dst_range_start = splits
-            .next()
-            .ok_or(ParseRangeMappingError {
-                message: "Failed to get the first chunk".to_string(),
-            })
-            .map(|x| {
-                x.trim().parse::<u32>().map_err(|_| ParseRangeMappingError {
-                    message: "Failed to parse string into u32".to_string(),
-                })
-            })?;
-        let src_range_start = splits
-            .next()
-            .ok_or(ParseRangeMappingError {
-                message: "Failed to get the first chunk".to_string(),
-            })
-            .map(|x| {
-                x.trim().parse::<u32>().map_err(|_| ParseRangeMappingError {
-                    message: "Failed to parse string into u32".to_string(),
-                })
-            })?;
-        let range_len = splits
-            .next()
-            .ok_or(ParseRangeMappingError {
-                message: "Failed to get the first chunk".to_string(),
-            })
-            .map(|x| {
-                x.trim().parse::<u32>().map_err(|_| ParseRangeMappingError {
-                    message: "Failed to parse string into u32".to_string(),
-                })
-            })?;
+        let dst_range_start = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        });
+        let src_range_start = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        });
+        let range_len = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+            Ok(x) => Some(x),
+            Err(_) => None,
+        });
+
         match (dst_range_start, src_range_start, range_len) {
-            (Ok(dst), Ok(src), Ok(len)) => Ok(RangeMapping {
+            (Some(dst), Some(src), Some(len)) => Ok(RangeMapping {
                 dst_range_start: dst,
                 src_range_start: src,
                 range_len: len,
             }),
             _ => Err(ParseRangeMappingError {
-                message: "Failed to parse".to_string(),
+                message: format!("Failed to parse {} into RangeMapping", input),
             }),
         }
     }
@@ -148,14 +188,6 @@ impl RangeMapping {
     }
 }
 
-fn get_destination_for_ranges(source: u32, ranges: &Vec<RangeMapping>) -> u32 {
-    let rng_mapping = ranges.iter().find(|x| x.find_destination(source).is_some());
-    match rng_mapping {
-        Some(x) => x.find_destination(source).unwrap(),
-        None => source,
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -172,31 +204,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_destination_for_ranges() {
-        let range_mappings = vec![
-            RangeMapping {
-                src_range_start: 0,
-                dst_range_start: 10,
-                range_len: 5,
-            },
-            RangeMapping {
-                src_range_start: 20,
-                dst_range_start: 30,
-                range_len: 5,
-            },
-        ];
-
-        // inside the first range
-        assert_eq!(13, get_destination_for_ranges(3, &range_mappings));
-        // inside the second range
-        assert_eq!(30, get_destination_for_ranges(20, &range_mappings));
-        // Outside the mappings returns the same value
-        assert_eq!(100, get_destination_for_ranges(100, &range_mappings));
-        // outside the first range, but before the second range
-        assert_eq!(5, get_destination_for_ranges(5, &range_mappings));
-    }
-
-    #[test]
     fn test_parse_range_mapping_from_str() -> Result<(), ParseRangeMappingError> {
         let calculated = match RangeMapping::from_str("3154320624 3939365694 227285246") {
             Ok(it) => it,
@@ -209,5 +216,46 @@ mod tests {
         };
         assert_eq!(expected, calculated);
         Ok(())
+    }
+
+    #[test]
+    fn test_day05_part1_handler() {
+        let lines: Vec<&str> = "seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4"
+            .split('\n')
+            .collect();
+        let calculated = day05_part1_handler(&mut lines.iter().map(|x| x.to_string()));
+        assert_eq!(35, calculated);
     }
 }
