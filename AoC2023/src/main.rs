@@ -58,6 +58,11 @@ fn select_scenario() -> ScenarioConfig {
             file_path: "./data/day05.txt".to_string(),
             process_fn: day05::day05_part1,
         },
+        "day05_part2" => ScenarioConfig {
+            file_path: "./data/day05.txt".to_string(),
+            process_fn: day05::day05_part2,
+        },
+
         _ => {
             panic!("Expected argument like 'day01_part1' and not {}", &args[1]);
         }
@@ -69,8 +74,6 @@ fn main() {
     let scenario = select_scenario();
 
     // Get the lines iterator
-    //let lines = data_loader::read_lines(Path::new(scenario.file_path.as_str())).expect(&format!(
-    //    "Expected {} to have readable lines.",
     let lines = data_loader::read_lines(Path::new(scenario.file_path.as_str()))
         .unwrap_or_else(|_| panic!("Expected {} to have readable lines.", scenario.file_path));
 

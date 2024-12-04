@@ -1,4 +1,3 @@
-use super::parsers::parse_str_with_separator;
 use std::{ops::Range, str::FromStr};
 
 /// Pretty print the result of the calculations
@@ -12,8 +11,8 @@ pub fn day05_part1(lines: &mut dyn Iterator<Item = String>) {
 /// 2. Iterate over the seeds to find the location
 ///     2a. Build the path from seed to location
 /// 3. Select the smallest location
-fn day05_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
-    let scenario = Scenario::from_str_itr(lines);
+fn day05_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u64 {
+    let scenario = Scenario::from_str_itr(lines, Scenario::part1_seed_extractor);
     let min_location = scenario
         .seeds
         .iter()
@@ -22,8 +21,29 @@ fn day05_part1_handler(lines: &mut dyn Iterator<Item = String>) -> u32 {
     min_location.expect("There should have been an answer")
 }
 
-fn destination_for_source(source: u32, rngs: &[RangeMapping]) -> u32 {
-    let destination: Vec<u32> = rngs
+/// Pretty print the result of the calculations
+pub fn day05_part2(lines: &mut dyn Iterator<Item = String>) {
+    let total = day05_part2_handler(lines);
+    println!("Total: {}", total);
+}
+
+/// Procedure
+/// 1. Parse the inputs into structs for the mappings and a list for the seeds.
+/// 2. Iterate over the seeds to find the location
+///     2a. Build the path from seed to location
+/// 3. Select the smallest location
+fn day05_part2_handler(lines: &mut dyn Iterator<Item = String>) -> u64 {
+    let scenario = Scenario::from_str_itr(lines, Scenario::part1_seed_extractor);
+    let min_location = scenario
+        .seeds
+        .iter()
+        .map(|seed| location_for_seed(*seed, &scenario))
+        .min();
+    min_location.expect("There should have been an answer")
+}
+
+fn destination_for_source(source: u64, rngs: &[RangeMapping]) -> u64 {
+    let destination: Vec<u64> = rngs
         .iter()
         .flat_map(|rng| rng.find_destination(source))
         .collect();
@@ -34,7 +54,7 @@ fn destination_for_source(source: u32, rngs: &[RangeMapping]) -> u32 {
     }
 }
 
-fn location_for_seed(seed: u32, scenario: &Scenario) -> u32 {
+fn location_for_seed(seed: u64, scenario: &Scenario) -> u64 {
     let soil = destination_for_source(seed, &scenario.seed_to_soil_mappings);
     let fertilizer = destination_for_source(soil, &scenario.soil_to_fertilizer_mappings);
     let water = destination_for_source(fertilizer, &scenario.fertilizer_to_waters);
@@ -45,7 +65,7 @@ fn location_for_seed(seed: u32, scenario: &Scenario) -> u32 {
 }
 
 struct Scenario {
-    seeds: Vec<u32>,
+    seeds: Vec<u64>,
     seed_to_soil_mappings: Vec<RangeMapping>,
     soil_to_fertilizer_mappings: Vec<RangeMapping>,
     fertilizer_to_waters: Vec<RangeMapping>,
@@ -69,15 +89,31 @@ impl Scenario {
         }
     }
 
-    fn from_str_itr(lines: &mut dyn Iterator<Item = String>) -> Scenario {
+    fn part1_seed_extractor(line: &str) -> Vec<u64> {
+        let mut splits = line.split(":");
+        splits.next(); // throw away the first part.
+                       //
+        let parsed: Vec<u64> = splits
+            .next()
+            .unwrap()
+            .trim()
+            .split(" ")
+            .map(|x| x.trim())
+            .filter(|x| !x.is_empty())
+            .map(|x| x.parse::<u64>().expect("Should parse into u64"))
+            .collect();
+        parsed
+    }
+
+    fn from_str_itr(
+        lines: &mut dyn Iterator<Item = String>,
+        seed_extractor: fn(&str) -> Vec<u64>,
+    ) -> Scenario {
         let mut s = Scenario::new();
 
         lines.take_while(|x| !x.is_empty()).for_each(|x| {
             if x.contains("seeds:") {
-                let mut splits = x.split(":");
-                splits.next(); // throw away the first part.
-                s.seeds
-                    .append(&mut parse_str_with_separator(splits.next().unwrap(), " "));
+                s.seeds.append(&mut (seed_extractor)(x.as_str()));
             }
         });
         lines.next(); // advance one.
@@ -130,9 +166,9 @@ impl Scenario {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 struct RangeMapping {
-    dst_range_start: u32,
-    src_range_start: u32,
-    range_len: u32,
+    dst_range_start: u64,
+    src_range_start: u64,
+    range_len: u64,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -146,15 +182,15 @@ impl FromStr for RangeMapping {
     fn from_str(input: &str) -> Result<RangeMapping, Self::Err> {
         // Segment the line
         let mut splits = input.split(" ");
-        let dst_range_start = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+        let dst_range_start = splits.next().and_then(|x| match x.trim().parse::<u64>() {
             Ok(x) => Some(x),
             Err(_) => None,
         });
-        let src_range_start = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+        let src_range_start = splits.next().and_then(|x| match x.trim().parse::<u64>() {
             Ok(x) => Some(x),
             Err(_) => None,
         });
-        let range_len = splits.next().and_then(|x| match x.trim().parse::<u32>() {
+        let range_len = splits.next().and_then(|x| match x.trim().parse::<u64>() {
             Ok(x) => Some(x),
             Err(_) => None,
         });
@@ -174,7 +210,7 @@ impl FromStr for RangeMapping {
 
 impl RangeMapping {
     /// If the input value is in source range, then return destination
-    fn find_destination(&self, input: u32) -> Option<u32> {
+    fn find_destination(&self, input: u64) -> Option<u64> {
         let rng = Range {
             start: self.src_range_start,
             end: self.src_range_start + self.range_len,
@@ -199,7 +235,7 @@ mod tests {
             dst_range_start: 10,
             range_len: 5,
         };
-        assert_eq!(Some(13u32), range_mapping.find_destination(3));
+        assert_eq!(Some(13u64), range_mapping.find_destination(3));
         assert_eq!(None, range_mapping.find_destination(5));
     }
 
@@ -218,9 +254,8 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn test_day05_part1_handler() {
-        let lines: Vec<&str> = "seeds: 79 14 55 13
+    fn sample_data() -> Vec<String> {
+        let lines: Vec<String> = "seeds: 79 14 55 13
 
 seed-to-soil map:
 50 98 2
@@ -254,8 +289,22 @@ humidity-to-location map:
 60 56 37
 56 93 4"
             .split('\n')
+            .map(|x| x.to_string())
             .collect();
+        lines
+    }
+
+    #[test]
+    fn test_day05_part1_handler() {
+        let lines = sample_data();
         let calculated = day05_part1_handler(&mut lines.iter().map(|x| x.to_string()));
         assert_eq!(35, calculated);
+    }
+
+    #[test]
+    fn test_day05_part2_handler() {
+        let lines = sample_data();
+        let calculated = day05_part2_handler(&mut lines.iter().map(|x| x.to_string()));
+        assert_eq!(46, calculated);
     }
 }
